@@ -11,7 +11,11 @@ def loadConfig() -> dict:
             return writeConfig(DOWNLOAD)
         else:
             with open(CONFIG, 'r') as file:
-                return json.load(file)
+                j = json.load(file)
+                if j.get('download_path'):
+                    return j
+                else:
+                    return writeConfig(DOWNLOAD)
     except Exception as e:
         print(repr(e))
 
@@ -27,7 +31,7 @@ def writeConfig(path: str):
 
 def setPath():
     try:
-        os.chdir(loadConfig().get('download_path', DOWNLOAD))
+        os.chdir(loadConfig().get('download_path'))
     except Exception as e:
         print(f"Unable to change current path: {e}")
 
@@ -96,6 +100,7 @@ def downloader(q: search.Query | None, url: str, video: bool, playlist: bool) ->
 
 
 def show_items(queries: list[search.Query]) -> None:
+    cls()
     for idx, q in enumerate(queries, start=1):
         print(f"{idx}. {q.title} [{q.duration}]")
 

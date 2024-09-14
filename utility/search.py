@@ -5,7 +5,7 @@ from youtube_search import YoutubeSearch
 
 
 def is_url(string):
-    regex = rcomp(r'https?://(?:www\.)?[a-zA-Z0-9./]+')
+    regex = rcomp(r'(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(watch\?v=|embed/|shorts/)|youtu\.be\/)([a-zA-Z0-9_-]+)')
     return bool(regex.match(string))
 
 
@@ -92,4 +92,3 @@ class SearchWithUrl:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=False)
             self.video = Query(info_dict)
-

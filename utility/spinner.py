@@ -33,6 +33,7 @@ class Spinner:
 
     def stop(self):
         if self.process and self.process.is_alive():
+            print()  # Prints
             self.process.kill()  # Terminate the process
             self.process = None  # Reset the process object
         else:

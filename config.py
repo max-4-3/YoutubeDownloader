@@ -10,13 +10,13 @@ if platform_name().lower() in ['windows', 'nt']:
         'yt_downloader_config.json'
     )
 else:
-    CONFIG = "files/yt_downloader_config.json"
+    CONFIG = os.path.join(os.path.split(__file__)[0], "files", "yt_downloader_config.json")
 
 # the default download path
 if platform_name().lower() in ['windows', 'nt']:
     DOWNLOAD = os.path.join(os.getenv('HOMEPATH'), "Downloads")
 else:
-    DOWNLOAD = "downloads"
+    DOWNLOAD = os.path.join(os.path.split(__file__)[0], "downloads")
 
 # loading spinner
 SPINNER = Spinner("", speed=0.1)
