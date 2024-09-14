@@ -134,17 +134,13 @@ class DownloadPlaylist:
             'skip_download': True  # Do not download any content
         }
         with yt_dlp.YoutubeDL(opts) as ydl:
-            return ydl.extract_info(self.url, download=False).get('title', "Playlist1")
+            title = ydl.extract_info(self.url, download=False).get('title', "Playlist1")
+            return title
 
     def _set_options(self, video: bool):
         if video:
             self.options = {
-                'format': 'bestaudio[ext=m4a]/bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '128',
-                }],
+                'format': 'bestvideo+bestaudio/best',
                 'outtmpl': f"{self.playlist_path}/%(playlist_index)s - %(title)s.%(ext)s",
                 'quiet': True,
                 'no_warnings': True,
@@ -153,7 +149,12 @@ class DownloadPlaylist:
             }
         else:
             self.options = {
-                'format': 'bestvideo+bestaudio/best',
+                'format': 'bestaudio[ext=m4a]/bestaudio/best',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '128',
+                }],
                 'outtmpl': f"{self.playlist_path}/%(playlist_index)s - %(title)s.%(ext)s",
                 'quiet': True,
                 'no_warnings': True,

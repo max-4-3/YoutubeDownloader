@@ -11,5 +11,11 @@
     pip install yt_dlp
     ```
 
+or
+
+- ```
+   pip install -r requirments.txt
+   ```
+
 ## Run
 Just run `main.py` after downloading `Required Modules`!
