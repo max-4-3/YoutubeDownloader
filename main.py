@@ -140,11 +140,14 @@ def main() -> None:
     else:
         results = get_results(query)
         show_items(results)
-        idx = int(
-            input(
-                f"{cli.input_symbol} {cli.yellow}Choose the video (enter the index or s.no.){cli.reset}:\n"
+        idx = input(
+                f"{cli.input_symbol} {cli.yellow}Choose the video (enter the index) or Retry (r){cli.reset}:\n"
             ).strip()
-        )  # lazy work
+        if idx.lower() in ["reset", "try-again", "retry", "r"]:
+            cls()
+            main()
+        else:
+            idx = int(idx)
         # downloads a single video from the list shown above
         downloader(q=get_item(results, idx), video=video)
         return
