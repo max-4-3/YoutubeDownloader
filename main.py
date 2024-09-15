@@ -1,7 +1,7 @@
 import json
 import os
 
-from config import CONFIG, DOWNLOAD, DOWNLOAD_PATH_KEY, SPINNER, cls, loading
+from config import CONFIG, DOWNLOAD, DOWNLOAD_PATH_KEY, SPINNER, cls, loading, cli
 from utility import search, download
 
 
@@ -18,7 +18,7 @@ def loadConfig() -> dict:
                 else:
                     return writeConfig(DOWNLOAD)
     except Exception as load_exception:
-        print(f"Unable to open \"{CONFIG}\": {repr(load_exception)}")
+        cli.error(f"Unable to open \"{CONFIG}\": {repr(load_exception)}")
         return {DOWNLOAD_PATH_KEY: DOWNLOAD}
 
 
@@ -29,7 +29,7 @@ def writeConfig(path: str) -> dict:
             json.dump({DOWNLOAD_PATH_KEY: path}, file, indent=2, ensure_ascii=False)
         return loadConfig()
     except Exception as write_exception:
-        print(f"Unable to open \"{CONFIG}\": {repr(write_exception)}")
+        cli.error(f"Unable to open \"{CONFIG}\": {repr(write_exception)}")
         return {DOWNLOAD_PATH_KEY: DOWNLOAD}
 
 
@@ -40,7 +40,7 @@ def setPath() -> None:
         os.makedirs(d_path, exist_ok=True)
         os.chdir(d_path)
     except Exception as cwd_error:
-        print(f"Unable to change current path: {cwd_error}")
+        cli.error(f"Unable to change current path: {cwd_error}")
 
 
 @loading(SPINNER, "Searching...")
@@ -49,56 +49,70 @@ def get_results(string: str) -> list[search.Query]:
     return search.Search(string).queries
 
 
-@loading(SPINNER, "Extracting...")
+@loading(SPINNER, f"{cli.magenta}Extracting...{cli.reset}")
 def get_result(url: str) -> search.Query:
     """Takes an url and returns a video as a Query object"""
     return search.SearchWithUrl(url).video
 
 
-@loading(SPINNER, "Downloading...")
+@loading(SPINNER, f"{cli.cyan}Downloading...{cli.reset}")
 def download_helper(q: search.Query, video: bool) -> None:
     download.Download(q.url, q.title, video)
 
 
-@loading(SPINNER, "Extracting Playlist...")
-def extract_playlist(url, video: bool) -> download.DownloadPlaylist:
+@loading(SPINNER, f"{cli.magenta}Extracting Playlist...{cli.reset}")
+def extract_playlist(url: str, video: bool) -> download.DownloadPlaylist:
+    cls()
     return download.DownloadPlaylist(url, video)
 
 
-@loading(SPINNER, "Downloading Playlist...")
+@loading(SPINNER, f"{cli.cyan}Downloading Playlist...{cli.reset}")
 def download_playlist(o: download.DownloadPlaylist) -> None:
     o.download()
 
 
 def path_validate() -> None:
     """Validates path, set new path, change cwd, etc"""
-    p = input(f"Download Path: "
-              f"{loadConfig().get(DOWNLOAD_PATH_KEY, DOWNLOAD)}\nDo You Want to change the download path?(y/n):\n")
+    print(f"{cli.root_symbol} Download Path: {cli.green}{loadConfig().get(DOWNLOAD_PATH_KEY, DOWNLOAD)}{cli.reset}")
+    p = input(f"{cli.info_symbol} {cli.yellow}Do you want to change the path? (y/n){cli.reset}: \n")
     if p in ['yes', 'y']:
-        p = input('Enter the path: ')
+        p = input(f'{cli.input_symbol} {cli.green}Enter the path{cli.reset}: ')
         writeConfig(p)
     setPath()
+    cls()
 
 
-def downloader(q: search.Query | None, url: str, video: bool, playlist: bool) -> None:
+def downloader(q: search.Query = None, url: str = None, video: bool = False, playlist: bool = False) -> None:
     """Download the video/playlist"""
+    cls()
     path_validate()
 
-    if playlist:
+    if playlist and (url is not None):
+
+        # If playlist and playlist url is provided
         playlist_obj = extract_playlist(url, video)
-        print(f"Downloading: {playlist_obj.title}")
+        cli.info(f"Downloading: {playlist_obj.title}")
         download_playlist(playlist_obj)
         return
-    else:
-        print(f"Downloading: {q.title} [{q.duration}]")
+
+    elif q is not None:
+
+        # If Query object is provided
+        cli.info(f"Downloading: {q.title} [{q.duration}]")
         download_helper(q, video)
+        return
+
+    else:
+
+        # Maybe adding some parameters might help?
+        cli.root("What a peaceful day, isn't it?")
 
 
 def show_items(queries: list[search.Query]) -> None:
     """prints the info of videos!"""
     cls()
     for idx, q in enumerate(queries, start=1):
-        print(f"{idx}. {q.title} [{q.duration}]")
+        print(f"{cli.green}{idx}. {cli.cyan}{q.title} {cli.reset}[{cli.magenta}{q.duration}{cli.reset}]")
 
 
 def get_item(queries: list[search.Query], idx: int) -> search.Query:
@@ -108,8 +122,8 @@ def get_item(queries: list[search.Query], idx: int) -> search.Query:
 
 def main() -> None:
     """Main execution starts here!"""
-    query = input('Enter the query (url, name):\n')
-    video = input('Video or Audio?(v/a):\n').lower()
+    query = input(f'{cli.input_symbol} {cli.yellow}Enter the query (url, name){cli.reset}:\n')
+    video = input(f'{cli.root_symbol} {cli.magenta}Video or Audio?(v/a){cli.reset}:\n').lower()
     video = True if video.lower() in ['v', 'video'] else False
     is_playlist = search.is_playlist(query)
     is_url = search.is_url(query)
@@ -117,18 +131,23 @@ def main() -> None:
     if is_url:
         if is_playlist:
             # downloads the playlist based on given url
-            downloader(q=None, video=video, url=query, playlist=True)
+            downloader(playlist=True, url=query, video=video)
             return
         else:
             # download the video from the url
-            downloader(q=get_result(query), video=video, url="", playlist=False)
+            downloader(q=get_result(query), video=video)
             return
     else:
         results = get_results(query)
         show_items(results)
-        idx = int(input("Choose the video (enter the index or s.no.):\n").strip())  # lazy work
+        idx = int(
+            input(
+                f"{cli.input_symbol} {cli.yellow}Choose the video (enter the index or s.no.){cli.reset}:\n"
+            ).strip()
+        )  # lazy work
         # downloads a single video from the list shown above
-        downloader(q=get_item(results, idx), url="", playlist=False, video=video)
+        downloader(q=get_item(results, idx), video=video)
+        return
 
 
 if __name__ == '__main__':
@@ -136,10 +155,10 @@ if __name__ == '__main__':
         try:
             cls()
             main()
-            choice = input("Continue?(y/n):\n").lower()
+            choice = input(f"{cli.input_symbol} {cli.magenta}Continue?(y/n){cli.reset}:\n").lower()
             if choice in ['yes', 'y']:
                 continue
             else:
                 break
         except Exception as e:
-            print(f"Something went wrong: {repr(e)}")
+            cli.error(f"Something went wrong: {repr(e)}")

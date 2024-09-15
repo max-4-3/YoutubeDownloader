@@ -9,6 +9,10 @@
  - `yt_dlp`:
     ```
     pip install yt_dlp
+    ``` 
+- `colorama`:
+    ```
+    pip install colorama
     ```
 
 or

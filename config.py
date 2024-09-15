@@ -1,19 +1,22 @@
 import os
 from platform import system as platform_name
 
+from utility.cli import CLI
 from utility.spinner import Spinner
 
 CONFIG = None
 DOWNLOAD = None
 SPINNER = None
+cli = CLI()
 DOWNLOAD_PATH_KEY = "download_path"  # The name of the key for download path
 CONFIG_FILE_NAME = "yt_downloader_config.json"
+is_windows = True if platform_name().lower() in ['windows', 'nt'] else False
 
 
 def set_config():
     global CONFIG, DOWNLOAD, SPINNER
 
-    if platform_name().lower() in ['windows', 'nt']:
+    if is_windows:
         CONFIG = os.path.join(
             os.getenv('LOCALAPPDATA'),
             CONFIG_FILE_NAME
@@ -21,7 +24,7 @@ def set_config():
     else:
         CONFIG = os.path.join(os.path.split(__file__)[0], "files", CONFIG_FILE_NAME)
 
-    if platform_name().lower() in ['windows', 'nt']:
+    if is_windows:
         DOWNLOAD = os.path.join(os.getenv('USERPROFILE'), "Downloads")
     else:
         DOWNLOAD = os.path.join(os.path.split(__file__)[0], "downloads")
@@ -30,7 +33,7 @@ def set_config():
 
 
 def cls():
-    if platform_name().lower() in ['windows', 'nt']:
+    if is_windows:
         os.system('cls')
     else:
         try:

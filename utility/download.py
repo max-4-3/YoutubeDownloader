@@ -1,9 +1,9 @@
 import os
-import platform
 import time
 
 import yt_dlp
 
+from utility import is_windows
 from .search import is_playlist
 
 
@@ -32,30 +32,19 @@ class Download:
 
     def __init__(self, url: str, filename: str, video: bool = False) -> None:
         self.url = url
-        self.filename = filename
-
-        if platform.system() in ["windows", "nt"]:
-            self.filename = sanitize_filename(self.filename)
-
-        self.options = self._set_options(video)
+        self.filename = sanitize_filename(filename) if is_windows else filename
 
         playlist = is_playlist(self.url)
 
         if playlist:
-            playlist_path = os.path.join(os.getcwd(), filename + 'playlist')
-            os.makedirs(playlist_path, exist_ok=True)
-            self.options.update({
-                "noplaylist": False,
-                "outtmpl": f"{playlist_path}/%(playlist_index)s - %(title)s.%(ext)s"
-            })
+            raise ValueError(f'Excepted a video url not a playlist url!')
 
-        self.__download(self.options)
-        if not playlist:
-            self._modify_timestamp()
+        self._set_options(video)
+        self.__download()
 
     def _set_options(self, video: bool):
         if video:
-            return {
+            self.options = {
                 'format': 'bestvideo+bestaudio/best',
                 'outtmpl': f"{self.filename}.%(ext)s",
                 'quiet': True,
@@ -63,7 +52,7 @@ class Download:
                 'progress_hooks': [lambda d: None]
             }
         else:
-            return {
+            self.options = {
                 'format': 'bestaudio[ext=m4a]/bestaudio/best',
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
@@ -91,12 +80,13 @@ class Download:
             os.utime(fp, (current_time, current_time))
             return
 
-        print(f"Unable to find file!")
+        print(f"Unable to find {self.filename}!")
 
-    def __download(self, options):
+    def __download(self):
         try:
-            with yt_dlp.YoutubeDL(options) as ydl:
+            with yt_dlp.YoutubeDL(self.options) as ydl:
                 ydl.download(self.url)
+            self._modify_timestamp()
         except yt_dlp.DownloadError as d:
             print(f"Unable To Download: {repr(d)}")
         except Exception as e:
@@ -111,22 +101,26 @@ class DownloadPlaylist:
     :param video: Whether to download video or audio
     """
 
+    __slots__ = (
+        'url',
+        'title',
+        'options',
+        'filename',
+        'playlist_url',
+        'playlist_path'
+    )
+
     def __init__(self, url: str, video: bool = False) -> None:
         self.url = url
         if not is_playlist(self.url):
             raise ValueError('Excepted a playlist url!')
 
-        self.filename = self.title
-
-        if platform.system() in ["windows", "nt"]:
-            self.filename = sanitize_filename(self.filename)
-
-        self.playlist_path = os.path.join(os.getcwd(), self.filename + '-playlist')
-        os.makedirs(self.playlist_path, exist_ok=True)
-
+        # Sets the options for downloading either a video or audio
         self._set_options(video)
+        # Sets the title and playlist url + handles the path generation and validation
+        self._set_title_and_playlist_url(self._get_metadata())
 
-    def _get_title(self):
+    def _get_metadata(self):
         opts = {
             'quiet': True,  # Disable verbose output
             'no_warnings': True,  # Suppress warnings
@@ -134,8 +128,13 @@ class DownloadPlaylist:
             'skip_download': True  # Do not download any content
         }
         with yt_dlp.YoutubeDL(opts) as ydl:
-            title = ydl.extract_info(self.url, download=False).get('title', "Playlist1")
-            return title
+            info = ydl.extract_info(self.url, download=False)
+            return info
+
+    def _set_title_and_playlist_url(self, metadata: dict):
+        self.title = metadata.get('title')
+        self.playlist_url = metadata.get('url')
+        self._set_paths()
 
     def _set_options(self, video: bool):
         if video:
@@ -162,16 +161,21 @@ class DownloadPlaylist:
                 'noplaylist': False
             }
 
-    @property
-    def title(self):
-        return self._get_title()
+    def _set_paths(self):
+        self.filename = sanitize_filename(self.title) if is_windows else self.title
+        self.playlist_path = os.path.join(os.getcwd(), self.filename + '-playlist')
+
+        # makes the download path
+        os.makedirs(self.playlist_path)
 
     def download(self):
         try:
             with yt_dlp.YoutubeDL(self.options) as ydl:
-                ydl.download(self.url)
+                ydl.download(self.playlist_url)
         except yt_dlp.DownloadError as d:
             print(f"Unable To Download: {repr(d)}")
         except Exception as e:
             print(f"Something Went Wrong: {repr(e)}")
 
+    def __repr__(self):
+        return f"Downloading: {self.title} in {self.playlist_path}"

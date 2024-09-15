@@ -60,9 +60,9 @@ class Search:
             raise ValueError("Invalid Keyword Given!")
 
         if is_url(self.keyword):
-            raise ValueError('Excepted keyword not url!')
-        else:
-            self.__search()
+            raise ValueError('Excepted keyword(s) not url!')
+
+        self.__search()
 
     def __search(self):
         results = YoutubeSearch(self.keyword, self.amount).to_dict()
@@ -81,6 +81,7 @@ class SearchWithUrl:
     def __init__(self, url: str) -> None:
         if not is_url(url):
             raise ValueError(f'Excepted url not {url}')
+
         self.__get(url)
 
     def __get(self, url):
