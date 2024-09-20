@@ -140,7 +140,6 @@ class DownloadPlaylist:
         if video:
             self.options = {
                 'format': 'bestvideo+bestaudio/best',
-                'outtmpl': f"{self.playlist_path}/%(playlist_index)s - %(title)s.%(ext)s",
                 'quiet': True,
                 'no_warnings': True,
                 'progress_hooks': [lambda d: None],
@@ -154,7 +153,6 @@ class DownloadPlaylist:
                     'preferredcodec': 'mp3',
                     'preferredquality': '128',
                 }],
-                'outtmpl': f"{self.playlist_path}/%(playlist_index)s - %(title)s.%(ext)s",
                 'quiet': True,
                 'no_warnings': True,
                 'progress_hooks': [lambda d: None],
@@ -166,7 +164,10 @@ class DownloadPlaylist:
         self.playlist_path = os.path.join(os.getcwd(), self.filename + '-playlist')
 
         # makes the download path
-        os.makedirs(self.playlist_path)
+        os.makedirs(self.playlist_path, exist_ok=True)
+
+        # adds the paths to self.options
+        self.options['outtmpl'] = f"{self.playlist_path}/%(playlist_index)s - %(title)s.%(ext)s"
 
     def download(self):
         try:
