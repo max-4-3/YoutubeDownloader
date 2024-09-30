@@ -141,8 +141,8 @@ def main() -> None:
         results = get_results(query)
         show_items(results)
         idx = input(
-                f"{cli.input_symbol} {cli.yellow}Choose the video (enter the index) or Retry (r){cli.reset}:\n"
-            ).strip()
+            f"{cli.input_symbol} {cli.yellow}Choose the video (enter the index) or Retry (r){cli.reset}:\n"
+        ).strip()
         if idx.lower() in ["reset", "try-again", "retry", "r"]:
             cls()
             main()
