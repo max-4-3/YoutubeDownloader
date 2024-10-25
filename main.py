@@ -1,8 +1,13 @@
 import json
 import os
+import random
 
 from config import CONFIG, DOWNLOAD, DOWNLOAD_PATH_KEY, SPINNER, cls, loading, cli
 from utility import search, download
+
+
+WORK_AROUND = False
+WORK_AROUND_FOLDER_NAME = f".temp_{random.randint(0, 100000000000)}"
 
 
 def loadConfig() -> dict:
@@ -24,6 +29,14 @@ def loadConfig() -> dict:
 
 def writeConfig(path: str) -> dict:
     """Write configuration to CONFIG file!"""
+
+    # Path
+    if path.startswith("~"):
+        path = os.path.join(os.getenv("~", ""), path[1:])
+
+    if path.startswith("."):
+        path = os.path.join(os.getcwd(), path[1:])
+
     try:
         with open(CONFIG, 'w') as file:
             json.dump({DOWNLOAD_PATH_KEY: path}, file, indent=2, ensure_ascii=False)
@@ -34,13 +47,45 @@ def writeConfig(path: str) -> dict:
 
 
 def setPath() -> None:
-    """Sets 'CWD' to the DOWNLOAD directory"""
+    """Sets 'CWD' to the DOWNLOAD directory if WORK_AROUND is False"""
+
+    if WORK_AROUND:
+        new_path = os.path.join(os.path.split(__file__)[0], WORK_AROUND_FOLDER_NAME)
+        os.makedirs(new_path, exist_ok=True)
+        os.chdir(new_path)
+        return
+
     try:
         d_path = loadConfig().get(DOWNLOAD_PATH_KEY)
         os.makedirs(d_path, exist_ok=True)
         os.chdir(d_path)
     except Exception as cwd_error:
         cli.error(f"Unable to change current path: {cwd_error}")
+
+
+def checkPerms(path: str) -> bool:
+    try:
+        return os.access(path, os.W_OK)
+    except:
+        return False
+
+
+def workaroundResolver() -> None:
+    if not WORK_AROUND:
+        return
+
+    temp_path = os.path.join(os.path.split(__file__)[0], WORK_AROUND_FOLDER_NAME)
+    if not temp_path:
+        return
+
+    dest_path = loadConfig().get(DOWNLOAD_PATH_KEY, DOWNLOAD)
+    try:
+        import shutil
+        shutil.copy(temp_path, dest_path, follow_symlinks=True)
+    except PermissionError:
+        print(f"{cli.info_symbol}{cli.yellow} Unabel to do workaround!\nFile is saved in: {temp_path}")
+    except Exception as exception:
+        print(f"{cli.root_symbol}{cli.magenta} Unable to do Workaround: {repr(exception)}\nFile Stored in: {temp_path}")
 
 
 @loading(SPINNER, "Searching...")
@@ -73,12 +118,16 @@ def download_playlist(o: download.DownloadPlaylist) -> None:
 
 def path_validate() -> None:
     """Validates path, set new path, change cwd, etc"""
+
+    global WORK_AROUND
+
     print(f"{cli.root_symbol} Download Path: {cli.green}{loadConfig().get(DOWNLOAD_PATH_KEY, DOWNLOAD)}{cli.reset}")
     p = input(f"{cli.info_symbol} {cli.yellow}Do you want to change the path? (y/n){cli.reset}: \n")
     if p in ['yes', 'y']:
         p = input(f'{cli.input_symbol} {cli.green}Enter the path{cli.reset}: ')
         writeConfig(p)
     setPath()
+    WORK_AROUND = checkPerms(loadConfig().get(DOWNLOAD_PATH_KEY))
     cls()
 
 
@@ -150,6 +199,9 @@ def main() -> None:
             idx = int(idx)
         # downloads a single video from the list shown above
         downloader(q=get_item(results, idx), video=video)
+
+        # Workaround completer
+
         return
 
 
