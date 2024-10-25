@@ -86,13 +86,12 @@ def workaroundResolver() -> None:
         print(f"{cli.info_symbol}{cli.yellow} Coping {temp_path} to {dest_path}")
         for file in os.listdir(temp_path):
             shutil.copy(os.path.join(temp_path, file), dest_path)
+        if os.path.exists(temp_path):
+            shutil.rmtree(temp_path)
     except PermissionError:
         print(f"{cli.info_symbol}{cli.yellow} Unable to do workaround!\nFile is saved in: {temp_path}")
     except Exception as exception:
         print(f"{cli.root_symbol}{cli.magenta} Unable to do Workaround: {repr(exception)}\nFile Stored in: {temp_path}")
-    finally:
-        if os.path.exists(temp_path):
-            shutil.rmtree(temp_path)
 
 
 @loading(SPINNER, "Searching...")
@@ -136,7 +135,7 @@ def download_playlist(o: download.DownloadPlaylist) -> None:
         print(f"{cli.root_symbol}{cli.magenta} Using WorkAround."
               f"\nDownloading in :{os.path.join(os.getcwd(), WORK_AROUND_FOLDER_NAME)}")
         download_playlist(o)
-        
+
 
 def path_validate() -> None:
     """Validates path, set new path, change cwd, etc"""
