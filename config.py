@@ -51,10 +51,13 @@ def loading(spinner: Spinner, message: str = "", speed: float = 0.1):
                 spinner.msg = message or spinner.msg
                 spinner.speed = speed
 
+                if spinner.is_running:
+                    spinner.stop()
                 spinner.start()
                 results = func(*args, **kwargs)
             finally:
-                spinner.stop()
+                if spinner.is_running:
+                    spinner.stop()
 
             return results
 

@@ -88,6 +88,8 @@ class Download:
                 ydl.download(self.url)
             self._modify_timestamp()
         except yt_dlp.DownloadError as d:
+            if "Operation not permitted".lower() in str(d).lower():
+                raise PermissionError
             print(f"Unable To Download: {repr(d)}")
         except Exception as e:
             print(f"Something Went Wrong: {repr(e)}")
@@ -174,6 +176,8 @@ class DownloadPlaylist:
             with yt_dlp.YoutubeDL(self.options) as ydl:
                 ydl.download(self.playlist_url)
         except yt_dlp.DownloadError as d:
+            if "Operation not permitted".lower() in str(d).lower():
+                raise PermissionError
             print(f"Unable To Download: {repr(d)}")
         except Exception as e:
             print(f"Something Went Wrong: {repr(e)}")

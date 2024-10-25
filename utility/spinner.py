@@ -19,6 +19,10 @@ class Spinner:
                 n = 0
             time.sleep(self.speed)
 
+    @property
+    def is_running(self) -> bool:
+        return self.process.is_alive() if self.process else False
+
     def start(self):
         if self.process and self.process.is_alive():
             self.process.terminate()

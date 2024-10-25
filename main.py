@@ -75,7 +75,7 @@ def workaroundResolver() -> None:
         return
 
     temp_path = os.path.join(os.path.split(__file__)[0], WORK_AROUND_FOLDER_NAME)
-    if not temp_path:
+    if not os.path.exists(temp_path):
         return
 
     dest_path = loadConfig().get(DOWNLOAD_PATH_KEY, DOWNLOAD)
@@ -83,7 +83,9 @@ def workaroundResolver() -> None:
     import shutil
 
     try:
-        shutil.copy(temp_path, dest_path, follow_symlinks=True)
+        print(f"{cli.info_symbol}{cli.yellow} Coping {temp_path} to {dest_path}")
+        for file in os.listdir(temp_path):
+            shutil.copy(os.path.join(temp_path, file), dest_path)
     except PermissionError:
         print(f"{cli.info_symbol}{cli.yellow} Unable to do workaround!\nFile is saved in: {temp_path}")
     except Exception as exception:
@@ -109,7 +111,7 @@ def get_result(url: str) -> search.Query:
 def download_helper(q: search.Query, video: bool) -> None:
     try:
         download.Download(q.url, q.title, video)
-    except:
+    except PermissionError:
         global WORK_AROUND
         WORK_AROUND = True
         setPath()
@@ -126,12 +128,15 @@ def extract_playlist(url: str, video: bool) -> download.DownloadPlaylist:
 def download_playlist(o: download.DownloadPlaylist) -> None:
     try:
         o.download()
-    except:
+    except PermissionError:
         global WORK_AROUND
         WORK_AROUND = True
         setPath()
-        download_playlist(o)
 
+        print(f"{cli.root_symbol}{cli.magenta} Using WorkAround."
+              f"\nDownloading in :{os.path.join(os.getcwd(), WORK_AROUND_FOLDER_NAME)}")
+        download_playlist(o)
+        
 
 def path_validate() -> None:
     """Validates path, set new path, change cwd, etc"""
