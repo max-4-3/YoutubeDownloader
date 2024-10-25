@@ -84,6 +84,9 @@ def workaroundResolver() -> None:
 
     try:
         print(f"{cli.info_symbol}{cli.yellow} Coping {temp_path} to {dest_path}")
+
+        os.makedirs(dest_path, exist_ok=True)
+
         for file in os.listdir(temp_path):
             shutil.copy(os.path.join(temp_path, file), dest_path)
         if os.path.exists(temp_path):
@@ -111,9 +114,13 @@ def download_helper(q: search.Query, video: bool) -> None:
     try:
         download.Download(q.url, q.title, video)
     except PermissionError:
+        cls()
         global WORK_AROUND
         WORK_AROUND = True
         setPath()
+
+        print(f"{cli.root_symbol}{cli.magenta} Using WorkAround."
+              f"\nDownloading in :{os.path.join(os.getcwd(), WORK_AROUND_FOLDER_NAME)}")
         download_helper(q, video)
 
 
@@ -128,6 +135,7 @@ def download_playlist(o: download.DownloadPlaylist) -> None:
     try:
         o.download()
     except PermissionError:
+        cls()
         global WORK_AROUND
         WORK_AROUND = True
         setPath()
