@@ -1,13 +1,14 @@
 import json
+import shutil
+import subprocess as sp
 import os
 import random
 
-from config import CONFIG, DOWNLOAD, DOWNLOAD_PATH_KEY, SPINNER, cls, loading, cli
+from config import CONFIG, DOWNLOAD, DOWNLOAD_PATH_KEY, SPINNER, cls, loading, cli, is_windows, shell_script_path
 from utility import search, download
 
-
 WORK_AROUND = False
-WORK_AROUND_FOLDER_NAME = f".temp_{random.randint(0, 100000000000)}"
+WORK_AROUND_FOLDER_NAME = None
 
 
 def loadConfig() -> dict:
@@ -39,6 +40,7 @@ def writeConfig(path: str) -> dict:
 
     try:
         with open(CONFIG, 'w') as file:
+
             json.dump({DOWNLOAD_PATH_KEY: path}, file, indent=2, ensure_ascii=False)
         return loadConfig()
     except Exception as write_exception:
@@ -63,24 +65,16 @@ def setPath() -> None:
         cli.error(f"Unable to change current path: {cwd_error}")
 
 
-def checkPerms(path: str) -> bool:
-    try:
-        return os.access(path, os.W_OK)
-    except:
-        return False
-
-
 def workaroundResolver() -> None:
     if not WORK_AROUND:
         return
 
     temp_path = os.path.join(os.path.split(__file__)[0], WORK_AROUND_FOLDER_NAME)
+
     if not os.path.exists(temp_path):
         return
 
     dest_path = loadConfig().get(DOWNLOAD_PATH_KEY, DOWNLOAD)
-
-    import shutil
 
     try:
         print(f"{cli.info_symbol}{cli.yellow} Coping {temp_path} to {dest_path}")
@@ -88,12 +82,19 @@ def workaroundResolver() -> None:
         os.makedirs(dest_path, exist_ok=True)
 
         for file in os.listdir(temp_path):
-            shutil.copy(os.path.join(temp_path, file), dest_path)
+
+            if not is_windows:
+                sp.run([shell_script_path, os.path.join(temp_path, file), dest_path], check=True)
+            else:
+                sp.run(['copy', os.path.join(temp_path, file), dest_path], check=True)
+
         if os.path.exists(temp_path):
             shutil.rmtree(temp_path)
     except PermissionError:
+
         print(f"{cli.info_symbol}{cli.yellow} Unable to do workaround!\nFile is saved in: {temp_path}")
     except Exception as exception:
+
         print(f"{cli.root_symbol}{cli.magenta} Unable to do Workaround: {repr(exception)}\nFile Stored in: {temp_path}")
 
 
@@ -112,15 +113,20 @@ def get_result(url: str) -> search.Query:
 @loading(SPINNER, f"{cli.cyan}Downloading...{cli.reset}")
 def download_helper(q: search.Query, video: bool) -> None:
     try:
+
         download.Download(q.url, q.title, video)
+        print(f"{cli.success_symbol}{cli.cyan} {q.title} downloaded!")
+
     except PermissionError:
+
         cls()
         global WORK_AROUND
         WORK_AROUND = True
-        setPath()
 
+        setPath()
         print(f"{cli.root_symbol}{cli.magenta} Using WorkAround."
-              f"\nDownloading in :{os.path.join(os.getcwd(), WORK_AROUND_FOLDER_NAME)}")
+              f"\nDownloading in :{os.getcwd()}")
+
         download_helper(q, video)
 
 
@@ -133,16 +139,20 @@ def extract_playlist(url: str, video: bool) -> download.DownloadPlaylist:
 @loading(SPINNER, f"{cli.cyan}Downloading Playlist...{cli.reset}")
 def download_playlist(o: download.DownloadPlaylist) -> None:
     try:
+
         o.download()
+
     except PermissionError:
+
         cls()
         global WORK_AROUND
         WORK_AROUND = True
-        setPath()
 
+        setPath()
         print(f"{cli.root_symbol}{cli.magenta} Using WorkAround."
-              f"\nDownloading in :{os.path.join(os.getcwd(), WORK_AROUND_FOLDER_NAME)}")
-        download_playlist(o)
+              f"\nDownloading in :{os.getcwd()}")
+
+        o.download()
 
 
 def path_validate() -> None:
@@ -156,7 +166,6 @@ def path_validate() -> None:
         p = input(f'{cli.input_symbol} {cli.green}Enter the path{cli.reset}: ')
         writeConfig(p)
     setPath()
-    WORK_AROUND = checkPerms(loadConfig().get(DOWNLOAD_PATH_KEY))
     cls()
 
 
@@ -222,8 +231,7 @@ def main() -> None:
             f"{cli.input_symbol} {cli.yellow}Choose the video (enter the index) or Retry (r){cli.reset}:\n"
         ).strip()
         if idx.lower() in ["reset", "try-again", "retry", "r"]:
-            cls()
-            main()
+            return
         else:
             idx = int(idx)
         # downloads a single video from the list shown above
@@ -237,10 +245,13 @@ def main() -> None:
 
 
 if __name__ == '__main__':
+    init_dir = os.getcwd()
     while True:
+        WORK_AROUND_FOLDER_NAME = f".temp_{random.randint(0, 100000000000)}"
         try:
             cls()
             main()
+            os.chdir(init_dir)
             choice = input(f"{cli.input_symbol} {cli.magenta}Continue?(y/n){cli.reset}:\n").lower()
             if choice in ['yes', 'y']:
                 continue

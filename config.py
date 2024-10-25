@@ -11,6 +11,7 @@ cli = CLI()
 DOWNLOAD_PATH_KEY = "download_path"  # The name of the key for download path
 CONFIG_FILE_NAME = "yt_downloader_config.json"
 is_windows = True if platform_name().lower() in ['windows', 'nt'] else False
+shell_script_path = os.path.join(os.path.split(__file__)[0], "files", "copy_file.sh")
 
 
 def set_config():
