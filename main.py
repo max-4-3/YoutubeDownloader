@@ -109,7 +109,7 @@ def get_result(url: str) -> search.Query:
 def download_helper(q: search.Query, video: bool) -> None:
     try:
         download.Download(q.url, q.title, video)
-    except PermissionError:
+    except:
         global WORK_AROUND
         WORK_AROUND = True
         setPath()
@@ -126,7 +126,7 @@ def extract_playlist(url: str, video: bool) -> download.DownloadPlaylist:
 def download_playlist(o: download.DownloadPlaylist) -> None:
     try:
         o.download()
-    except PermissionError:
+    except:
         global WORK_AROUND
         WORK_AROUND = True
         setPath()
