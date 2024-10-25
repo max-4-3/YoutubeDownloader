@@ -42,10 +42,48 @@ class Download:
         self._set_options(video)
         self.__download()
 
+    def _choose_format_id(self):
+        ydl_opts = {
+            'format': 'all',
+            'listformats': False,
+            'quiet': True
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(self.url, download=False)
+
+        fmts = info.get('formats', None)
+
+        if not fmts:
+            return None
+
+        audio = {}
+        audio_end_index = 0
+        for idx, a in enumerate(fmts, start=1):
+            if ('audio only' in a.get('format').lower()) and (a.get('abr', 0) not in [0, None]):
+                audio[len(audio) + 1] = a
+                audio_end_index = idx
+
+        video = {}
+        for idx, v in enumerate(fmts, start=1):
+            if idx <= audio_end_index:
+                continue
+            if (v.get('height', 0) == 0) or (v.get('vbr', 0) == 0):
+                continue
+            video[len(video) + 1] = v
+
+        high_video = max(video.values(), key=lambda a: (a.get('vbr', 0), a.get('height', 0)))
+        high_audio = max(audio.values(), key=lambda a: a.get('abr', 0))
+
+        return f"{high_audio['format_id']}+{high_video['format_id']}"
+    
     def _set_options(self, video: bool):
+
+        fmt = self._choose_format_id()
+
         if video:
             self.options = {
-                'format': 'bestvideo+bestaudio/best',
+                'format': fmt if fmt is not None else 'bv*+ba/b',
                 'outtmpl': f"{self.filename}.%(ext)s",
                 'quiet': True,
                 'no_warnings': True,
@@ -57,7 +95,7 @@ class Download:
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
                     'preferredcodec': 'mp3',
-                    'preferredquality': '128',
+                    'preferredquality': '320',
                 }],
                 'outtmpl': f"{self.filename}.%(ext)s",
                 'quiet': True,
@@ -122,6 +160,41 @@ class DownloadPlaylist:
         # Sets the title and playlist url + handles the path generation and validation
         self._set_title_and_playlist_url(self._get_metadata())
 
+    def _choose_format_id(self):
+        ydl_opts = {
+            'format': 'all',
+            'listformats': False,
+            'quiet': True
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(self.url, download=False)
+
+        fmts = info.get('formats', None)
+
+        if not fmts:
+            return None
+
+        audio = {}
+        audio_end_index = 0
+        for idx, a in enumerate(fmts, start=1):
+            if ('audio only' in a.get('format').lower()) and (a.get('abr', 0) not in [0, None]):
+                audio[len(audio) + 1] = a
+                audio_end_index = idx
+
+        video = {}
+        for idx, v in enumerate(fmts, start=1):
+            if idx <= audio_end_index:
+                continue
+            if (v.get('height', 0) == 0) or (v.get('vbr', 0) == 0):
+                continue
+            video[len(video) + 1] = v
+
+        high_video = max(video.values(), key=lambda a: (a.get('vbr', 0), a.get('height', 0)))
+        high_audio = max(audio.values(), key=lambda a: a.get('abr', 0))
+
+        return f"{high_audio['format_id']}+{high_video['format_id']}"
+
     def _get_metadata(self):
         opts = {
             'quiet': True,  # Disable verbose output
@@ -139,9 +212,12 @@ class DownloadPlaylist:
         self._set_paths()
 
     def _set_options(self, video: bool):
+
+        fmt = self._choose_format_id().get('format_id', None)
+
         if video:
             self.options = {
-                'format': 'bestvideo+bestaudio/best',
+                'format': 'bestvideo+bestaudio/best' if not fmt else fmt,
                 'quiet': True,
                 'no_warnings': True,
                 'progress_hooks': [lambda d: None],
@@ -153,7 +229,7 @@ class DownloadPlaylist:
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
                     'preferredcodec': 'mp3',
-                    'preferredquality': '128',
+                    'preferredquality': '320',
                 }],
                 'quiet': True,
                 'no_warnings': True,
