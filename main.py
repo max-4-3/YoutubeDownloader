@@ -32,7 +32,7 @@ def writeConfig(path: str) -> dict:
 
     # Path
     if path.startswith("~"):
-        path = os.path.join(os.getenv("~", ""), path[1:])
+        path = os.path.expanduser(path)
 
     if path.startswith("."):
         path = os.path.join(os.getcwd(), path[1:])
@@ -79,13 +79,18 @@ def workaroundResolver() -> None:
         return
 
     dest_path = loadConfig().get(DOWNLOAD_PATH_KEY, DOWNLOAD)
+
+    import shutil
+
     try:
-        import shutil
         shutil.copy(temp_path, dest_path, follow_symlinks=True)
     except PermissionError:
-        print(f"{cli.info_symbol}{cli.yellow} Unabel to do workaround!\nFile is saved in: {temp_path}")
+        print(f"{cli.info_symbol}{cli.yellow} Unable to do workaround!\nFile is saved in: {temp_path}")
     except Exception as exception:
         print(f"{cli.root_symbol}{cli.magenta} Unable to do Workaround: {repr(exception)}\nFile Stored in: {temp_path}")
+    finally:
+        if os.path.exists(temp_path):
+            shutil.rmtree(temp_path)
 
 
 @loading(SPINNER, "Searching...")
@@ -102,7 +107,13 @@ def get_result(url: str) -> search.Query:
 
 @loading(SPINNER, f"{cli.cyan}Downloading...{cli.reset}")
 def download_helper(q: search.Query, video: bool) -> None:
-    download.Download(q.url, q.title, video)
+    try:
+        download.Download(q.url, q.title, video)
+    except PermissionError:
+        global WORK_AROUND
+        WORK_AROUND = True
+        setPath()
+        download_helper(q, video)
 
 
 @loading(SPINNER, f"{cli.magenta}Extracting Playlist...{cli.reset}")
@@ -113,7 +124,13 @@ def extract_playlist(url: str, video: bool) -> download.DownloadPlaylist:
 
 @loading(SPINNER, f"{cli.cyan}Downloading Playlist...{cli.reset}")
 def download_playlist(o: download.DownloadPlaylist) -> None:
-    o.download()
+    try:
+        o.download()
+    except PermissionError:
+        global WORK_AROUND
+        WORK_AROUND = True
+        setPath()
+        download_playlist(o)
 
 
 def path_validate() -> None:
@@ -201,6 +218,8 @@ def main() -> None:
         downloader(q=get_item(results, idx), video=video)
 
         # Workaround completer
+        if WORK_AROUND:
+            workaroundResolver()
 
         return
 
