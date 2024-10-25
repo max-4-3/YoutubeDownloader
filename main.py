@@ -115,7 +115,7 @@ def download_helper(q: search.Query, video: bool) -> None:
     try:
 
         download.Download(q.url, q.title, video)
-        print(f"{cli.success_symbol}{cli.cyan} {q.title} downloaded!")
+        print(f"\n{cli.success_symbol}{cli.cyan} {q.title} downloaded!")
 
     except PermissionError:
 
@@ -141,6 +141,7 @@ def download_playlist(o: download.DownloadPlaylist) -> None:
     try:
 
         o.download()
+        print(f"\n{cli.success_symbol}{cli.cyan} {o.title} downloaded!")
 
     except PermissionError:
 
