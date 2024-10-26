@@ -167,8 +167,8 @@ def get_result(url: str) -> search.Query:
     return search.SearchWithUrl(url).video
 
 
-@loading(SPINNER, f"{cli.cyan}Downloading...{cli.reset}")
 def download_helper(q: search.Query, video: bool) -> None:
+    cli.info(f"Downloading...\n{q.title} [{q.duration}]\n")
     try:
 
         download.Download(q.url, q.title, video)
@@ -193,8 +193,8 @@ def extract_playlist(url: str, video: bool) -> download.DownloadPlaylist:
     return download.DownloadPlaylist(url, video)
 
 
-@loading(SPINNER, f"{cli.cyan}Downloading Playlist...{cli.reset}")
 def download_playlist(o: download.DownloadPlaylist) -> None:
+    cli.info(f"Downloading...\n{o.title}\n")
     try:
 
         o.download()
@@ -236,14 +236,12 @@ def downloader(q: search.Query = None, url: str = None, video: bool = False, pla
 
         # If playlist and playlist url is provided
         playlist_obj = extract_playlist(url, video)
-        cli.info(f"Downloading: {playlist_obj.title}")
         download_playlist(playlist_obj)
         return
 
     elif q is not None:
 
         # If Query object is provided
-        cli.info(f"Downloading: {q.title} [{q.duration}]")
         download_helper(q, video)
         return
 
