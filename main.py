@@ -84,12 +84,16 @@ def workaroundResolver() -> None:
         for file in os.listdir(temp_path):
 
             if not is_windows:
+                new_name = str(random.randint(0, 10000)) + os.path.splitext(file)[1]
                 rand_name = str(random.randint(0, 100000000000000)) + os.path.splitext(file)[1]
+
+                sp.run(['rename', os.path.join(temp_path, file), new_name])
+
                 temp_file = os.path.join(dest_path, rand_name)
                 cli.info(f"Touching {rand_name}...")
                 sp.run(['touch', temp_file], check=True)
                 cli.info(f"Data duplicating {file} --> {rand_name}")
-                sp.run(['dd', f"if='{file}'", f"of='{temp_file}'"], check=True)
+                sp.run(['dd', f"if='{os.path.join(temp_path, new_name)}'", f"of='{temp_file}'"], check=True)
                 cli.info(f"Renaming {rand_name} --> {file}")
                 sp.run(['rename', temp_file, file], check=True)
                 cli.success("Done!")
