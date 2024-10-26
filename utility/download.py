@@ -92,11 +92,6 @@ class Download:
         else:
             self.options = {
                 'format': 'bestaudio[ext=m4a]/bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '320',
-                }],
                 'outtmpl': f"{self.filename}.%(ext)s",
                 'quiet': True,
                 'no_warnings': True,
@@ -226,11 +221,6 @@ class DownloadPlaylist:
         else:
             self.options = {
                 'format': 'bestaudio[ext=m4a]/bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '320',
-                }],
                 'quiet': True,
                 'no_warnings': True,
                 'progress_hooks': [lambda d: None],
