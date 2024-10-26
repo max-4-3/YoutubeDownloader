@@ -118,18 +118,32 @@ def workaroundResolver() -> None:
 
             if is_su:
                 try:
+                    cli.root("Running Super User Script...")
                     sp.run([su_shell_script_path, file, dest_path], check=True)
+                    cli.success("Success!")
                     continue
-                except:
-                    pass
+                except Exception as e:
+                    cli.error(f"Error: {repr(e)}")
 
             if not is_windows:
                 try:
+                    cli.root("Running Script...")
                     sp.run([shell_script_path, file, dest_path], check=True)
-                except:
-                    work(file, dest_path, temp_path)
+                    cli.success("Success!")
+                except Exception as e:
+                    cli.error(f"Error: {repr(e)}")
+                    try:
+                        cli.root("Using Diffrent Method...")
+                        work(file, dest_path, temp_path)
+                        cli.success("Success!")
+                    except Exception as e:
+                        cli.error(f"Unable to do Anything :(\nError: {repr(e)}")
             else:
-                sp.run(['copy', os.path.join(temp_path, file), dest_path], check=True)
+                try:
+                    cli.root(f"Running Simple Command...")
+                    sp.run(['copy', os.path.join(temp_path, file), dest_path], check=True)
+                except Exception as e:
+                    cli.error(f"An Error Occured: {repr(e)}")
 
         if os.path.exists(temp_path):
             shutil.rmtree(temp_path)
