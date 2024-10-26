@@ -168,7 +168,7 @@ def get_result(url: str) -> search.Query:
 
 
 def download_helper(q: search.Query, video: bool) -> None:
-    cli.info(f"Downloading...\n{q.title} [{q.duration}]\n")
+    cli.info(f"Downloading...\n{q.title} [{q.duration}]")
     try:
 
         download.Download(q.url, q.title, video)
@@ -194,7 +194,7 @@ def extract_playlist(url: str, video: bool) -> download.DownloadPlaylist:
 
 
 def download_playlist(o: download.DownloadPlaylist) -> None:
-    cli.info(f"Downloading...\n{o.title}\n")
+    cli.info(f"Downloading...\n{o.title}")
     try:
 
         o.download()
