@@ -73,6 +73,9 @@ def workaroundResolver() -> None:
 
     if not os.path.exists(temp_path):
         return
+    
+    if os.getcwd() != temp_path:
+        os.chdir(temp_path)
 
     dest_path = loadConfig().get(DOWNLOAD_PATH_KEY, DOWNLOAD)
 
@@ -87,7 +90,7 @@ def workaroundResolver() -> None:
                 new_name = str(random.randint(0, 10000)) + os.path.splitext(file)[1]
                 rand_name = str(random.randint(0, 100000000000000)) + os.path.splitext(file)[1]
 
-                sp.run(['rename', os.path.join(temp_path, file), new_name])
+                os.rename(file, new_name)
 
                 temp_file = os.path.join(dest_path, rand_name)
                 cli.info(f"Touching {rand_name}...")
@@ -95,7 +98,7 @@ def workaroundResolver() -> None:
                 cli.info(f"Data duplicating {file} --> {rand_name}")
                 sp.run(['dd', f"if='{os.path.join(temp_path, new_name)}'", f"of='{temp_file}'"], check=True)
                 cli.info(f"Renaming {rand_name} --> {file}")
-                sp.run(['rename', temp_file, file], check=True)
+                os.rename(os.path.join(dest_path, rand_name), file)
                 cli.success("Done!")
             else:
                 sp.run(['copy', os.path.join(temp_path, file), dest_path], check=True)
