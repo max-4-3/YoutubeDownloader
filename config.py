@@ -11,8 +11,9 @@ cli = CLI()
 DOWNLOAD_PATH_KEY = "download_path"  # The name of the key for download path
 CONFIG_FILE_NAME = "yt_downloader_config.json"
 is_windows = True if platform_name().lower() in ['windows', 'nt'] else False
+is_su = (os.system('command -v su > /dev/null 2>&1') == 0) if not is_windows else False
+su_shell_script_path = os.path.join(os.path.split(__file__)[0], "files", "copy_file_su.sh")
 shell_script_path = os.path.join(os.path.split(__file__)[0], "files", "copy_file.sh")
-
 
 def set_config():
     global CONFIG, DOWNLOAD, SPINNER

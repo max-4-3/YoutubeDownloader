@@ -4,7 +4,7 @@ import subprocess as sp
 import os
 import random
 
-from config import CONFIG, DOWNLOAD, DOWNLOAD_PATH_KEY, SPINNER, cls, loading, cli, is_windows, shell_script_path
+from config import CONFIG, DOWNLOAD, DOWNLOAD_PATH_KEY, SPINNER, cls, loading, cli, is_windows, shell_script_path, is_su, su_shell_script_path
 from utility import search, download
 
 WORK_AROUND = False
@@ -116,8 +116,18 @@ def workaroundResolver() -> None:
 
         for file in os.listdir(temp_path):
 
+            if is_su:
+                try:
+                    sp.run([su_shell_script_path, file, dest_path], check=True)
+                    continue
+                except:
+                    pass
+
             if not is_windows:
-                work(file, dest_path, temp_path)
+                try:
+                    sp.run([shell_script_path, file, dest_path], check=True)
+                except:
+                    work(file, dest_path, temp_path)
             else:
                 sp.run(['copy', os.path.join(temp_path, file), dest_path], check=True)
 
