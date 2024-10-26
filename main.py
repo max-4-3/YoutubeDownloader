@@ -65,6 +65,36 @@ def setPath() -> None:
         cli.error(f"Unable to change current path: {cwd_error}")
 
 
+def work(file, destination_dir, temp_dir):
+    new_name1 = f"{random.randint(1, 200000)}{os.path.splitext(file)[1]}"
+    new_name2 = f"{random.randint(1, 2000000000)}{os.path.splitext(file)[1]}"
+
+    cli.info(f"Renaming {file} -> {new_name1}")
+    sp.run(['mv', file, new_name1], check=True)
+
+    cli.info(f"Making A Empty File: {new_name2} in {destination_dir}")
+    sp.run(['touch', os.path.join(destination_dir, new_name2)], check=True)
+
+    cli.info(f"Data Copying from {new_name1} to {new_name2}")
+    try:
+
+        full_path1 = os.path.join(temp_dir, new_name1)
+        full_path2 = os.path.join(destination_dir, new_name2)
+
+        if ' ' in full_path1:
+            full_path1 = "'" + full_path1 + "'"
+        if ' ' in full_path2:
+            full_path2 = "'" + full_path2 + "'"
+        command = ['dd', f"if={full_path1}", f"of={full_path2}"]
+        cli.root(f"Executing: {' '.join(command)}")
+        sp.run(command, check=True)
+        
+        cli.info(f"Renaming {new_name2} -> {file}")
+        sp.run(['mv', full_path2, file], check=True)
+        cli.success("Completed!")
+    except Exception as e:
+        cli.error(f"Error: {e}")
+
 def workaroundResolver() -> None:
     if not WORK_AROUND:
         return
@@ -87,19 +117,7 @@ def workaroundResolver() -> None:
         for file in os.listdir(temp_path):
 
             if not is_windows:
-                new_name = str(random.randint(0, 10000)) + os.path.splitext(file)[1]
-                rand_name = str(random.randint(0, 100000000000000)) + os.path.splitext(file)[1]
-
-                os.rename(file, new_name)
-
-                temp_file = os.path.join(dest_path, rand_name)
-                cli.info(f"Touching {rand_name}...")
-                sp.run(['touch', temp_file], check=True)
-                cli.info(f"Data duplicating {file} --> {rand_name}")
-                sp.run(['dd', f"if='{os.path.join(temp_path, new_name)}'", f"of='{temp_file}'"], check=True)
-                cli.info(f"Renaming {rand_name} --> {file}")
-                os.rename(os.path.join(dest_path, rand_name), file)
-                cli.success("Done!")
+                work(file, dest_path, temp_path)
             else:
                 sp.run(['copy', os.path.join(temp_path, file), dest_path], check=True)
 
